@@ -1,3 +1,6 @@
 __pycache__/
 logs
 .pytest_cache/
+chan_agent.egg-info
+dist
+build

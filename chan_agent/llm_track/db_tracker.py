@@ -29,8 +29,6 @@ class LLMTracker(Model):
         if not db.table_exists(cls._meta.table_name):
             db.create_tables([cls])
             logger.info(f"Table '{cls._meta.table_name}' created successfully.")
-        else:
-            logger.error(f"Table '{cls._meta.table_name}' already exists.")
 
     @classmethod
     def create_log(cls, data: dict):

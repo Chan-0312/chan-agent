@@ -1,14 +1,14 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="Chan-Agent",  # 包的名称
+    name="chan-agent",  # 包的名称
     version="0.0.1",    # 版本号
     author="Chan",
     author_email="925355568@qq.com",
     description="A simple llm agent",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
-    url="https://github.com/Chan-0312/Chan-Agent",  # 项目主页
+    url="https://github.com/Chan-0312/chan-agent",  # 项目主页
     packages=find_packages(),  # 自动发现包
     classifiers=[
         "Programming Language :: Python :: 3",
