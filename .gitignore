@@ -4,3 +4,4 @@ logs
 chan_agent.egg-info
 dist
 build
+build_whl.sh
