@@ -37,6 +37,7 @@ class BaseLLM(ABC):
             temperature: float = None,
             top_p: float = None,
             max_tokens: int = None,
+            timeout: int = 30,
         ) -> str:
         """
         使用 messages 列表生成文本 completions。
@@ -49,6 +50,7 @@ class BaseLLM(ABC):
                 temperature=temperature,
                 top_p=top_p,
                 max_tokens=max_tokens,
+                timeout=timeout,
             )
 
             return response.choices[0].message.content
@@ -62,6 +64,7 @@ class BaseLLM(ABC):
             temperature: float = None,
             top_p: float = None,
             max_tokens: int = None,
+            timeout: int = 30,
         ) -> Iterator[str]:
         """
         使用 messages 列表生成文本 completions。
@@ -74,6 +77,7 @@ class BaseLLM(ABC):
             temperature=temperature,
             top_p=top_p,
             max_tokens=max_tokens,
+            timeout = timeout,
         )
 
         full_content = ""
@@ -85,7 +89,7 @@ class BaseLLM(ABC):
                     yield full_content
         
     
-    def text_completions(self, prompt: str, instructions: str = None, temperature: float = None, top_p: float = None, max_tokens: int = None) -> str:
+    def text_completions(self, prompt: str, instructions: str = None, temperature: float = None, top_p: float = None, max_tokens: int = None, timeout: int = 30) -> str:
         """
         使用prompt生成文本 completions
         """
@@ -94,9 +98,9 @@ class BaseLLM(ABC):
             messages.append({"role": "system", "content": instructions})
         messages.append({"role": "user", "content": prompt})
 
-        return self.text_completions_with_messages(messages, temperature, top_p, max_tokens)
+        return self.text_completions_with_messages(messages, temperature, top_p, max_tokens, timeout)
     
-    def text_completions_with_stream(self, prompt: str, instructions: str = None, temperature: float = None, top_p: float = None, max_tokens: int = None)-> Iterator[str]:
+    def text_completions_with_stream(self, prompt: str, instructions: str = None, temperature: float = None, top_p: float = None, max_tokens: int = None, timeout: int = 30)-> Iterator[str]:
         """
         使用prompt生成文本 completions 流式返回
         """
@@ -104,10 +108,10 @@ class BaseLLM(ABC):
         if instructions:
             messages.append({"role": "system", "content": instructions})
         messages.append({"role": "user", "content": prompt})
-        return self.text_completions_with_messages_stream(messages, temperature, top_p, max_tokens)
+        return self.text_completions_with_messages_stream(messages, temperature, top_p, max_tokens, timeout)
         
     
-    def basemodel_completions(self, basemodel: type[BaseModel], prompt: str, instructions: str = None)  -> Union[BaseModel,None]:
+    def basemodel_completions(self, basemodel: type[BaseModel], prompt: str, instructions: str = None, timeout:int=30)  -> Union[BaseModel,None]:
         """
         使用prompt生成basemodel
         """
@@ -115,9 +119,9 @@ class BaseLLM(ABC):
         if instructions:
             messages.append({"role": "system", "content": instructions})
 
-        return self.basemodel_completions_with_messages(basemodel, messages)
+        return self.basemodel_completions_with_messages(basemodel, messages, timeout)
 
-    def basemodel_completions_with_messages(self, basemodel: type[BaseModel], messages: list) -> Union[BaseModel,None]:
+    def basemodel_completions_with_messages(self, basemodel: type[BaseModel], messages: list, timeout:int=30) -> Union[BaseModel,None]:
         """
         使用messages列表生成basemodel
         """
@@ -125,7 +129,8 @@ class BaseLLM(ABC):
             res = self.instructor_client.chat.completions.create(
                 model=self.model_name,
                 response_model=basemodel,
-                messages=messages
+                messages=messages,
+                timeout=timeout
             )
             return res
         except Exception as e:

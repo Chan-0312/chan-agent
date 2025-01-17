@@ -162,7 +162,7 @@ class BaseAgent:
                     extra=tool_result.extra,
                 ))
                 if tool_result.use_tool_response:
-                    response.append(ChatMessage(
+                    response.append(AgentMessage(
                         role=self.agent_type,
                         content=tool_result.response,
                     ))
@@ -222,7 +222,7 @@ class BaseAgent:
                 yield response
                 if tool_result.use_tool_response:
                     # 使用工具的回复
-                    response.append(ChatMessage(
+                    response.append(AgentMessage(
                         role=self.agent_type,
                         content=tool_result.response,
                     ))
