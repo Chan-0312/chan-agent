@@ -1,26 +1,26 @@
-中文｜ [English](README_EN.md) 
+[中文](README.md) ｜ English 
 
 # Chan-Agent
 
-一个简洁高效的 Agent 架构，旨在为开发者提供灵活、易用的工具，支持多种 LLM 模型与任务自动化。
+A simple and efficient Agent framework designed to provide developers with flexible and easy-to-use tools, supporting various LLM models and task automation.
 
-## 特点
-- **轻量级**：高效且快速，适合多种应用场景。
-- **兼容多种 LLM 模型**：支持主流的 LLM 模型，灵活配置，方便替换。
-- **支持 LLM 任务执行**：内置灵活的任务执行功能，可以方便地执行各种 LLM 任务。
-- **支持 Agent 执行**：支持 Agent 执行任务，并通过协作提升系统的智能化与自动化水平。
+## Features
+- **Lightweight**: Efficient and fast, suitable for various application scenarios.
+- **Compatible with multiple LLM models**: Supports mainstream LLM models, flexible configuration, and easy replacement.
+- **Supports LLM task execution**: Built-in flexible task execution functions, making it easy to perform various LLM tasks.
+- **Supports Agent execution**: Supports Agent task execution, enhancing the system's intelligence and automation through collaboration.
 
-## 安装
+## Installation
 
-通过 `pip` 安装：
+Install via `pip`:
 
 ```bash
 pip install chan-agent
 ```
 
-## 使用示例
+## Usage Examples
 
-### 初始化LLM
+### Initialize LLM
 ```python
 from chan_agent.llms import get_llm
 
@@ -32,7 +32,7 @@ llm = get_llm(
 )
 ```
 
-### 创建任务
+### Create a Task
 ```python
 from chan_agent.task_llm import TaskLLM
 from chan_agent.schema import TaskOutputs, TaskInputItem
@@ -46,7 +46,7 @@ rules = ["Keep the original meaning.", "Use formal language."]
 task_llm = TaskLLM(llm=llm, task=task, rules=rules, output_model=TranslationOutput)
 ```
 
-### 执行任务
+### Execute the Task
 ```python
 inputs = [
     TaskInputItem(key="text", key_name="Text to translate", value="Hello, how are you?")
@@ -56,7 +56,7 @@ result = task_llm.call(inputs=inputs)
 print(result)
 ```
 
-### 使用工具
+### Use Tools
 ```python
 from chan_agent.llms import get_llm
 from chan_agent.base_agent import BaseAgent
@@ -99,5 +99,5 @@ response = agent.chat(messages)
 print(response)
 ```
 
-## 说明
-- 部分代码参考了[Qwen-Agent](https://github.com/QwenLM/Qwen-Agent)
+## Notes
+- Some code references [Qwen-Agent](https://github.com/QwenLM/Qwen-Agent)
