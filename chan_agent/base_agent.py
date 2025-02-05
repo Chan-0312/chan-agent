@@ -63,9 +63,9 @@ class BaseAgent:
         self.static_extra_info = static_extra_info
 
         # 最大每一轮工具使用的轮数
-        self.max_llm_call_per_run = max_content_chat_length
+        self.max_llm_call_per_run = max_llm_call_per_run
         # 最大对话上下文的轮数
-        self.max_content_chat_length = max_llm_call_per_run
+        self.max_content_chat_length = max_content_chat_length
         # agent类型
         self.agent_type = agent_type
 
