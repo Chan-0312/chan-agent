@@ -71,7 +71,7 @@ class BaseAgent:
 
         self.llm = llm
     
-    def __make_agent_prompt(self, messages:List[AgentMessage], **kwargs) -> str:
+    def make_agent_prompt(self, messages:List[AgentMessage], **kwargs) -> str:
         """
         构建agent prompt
         """
@@ -128,7 +128,7 @@ class BaseAgent:
             num_llm_calls_available -= 1
 
             # 生成agent prompt
-            prompt = self.__make_agent_prompt(messages=messages+response, **kwargs)
+            prompt = self.make_agent_prompt(messages=messages+response, **kwargs)
             # print(prompt)
 
             # 发起llm请求
@@ -182,7 +182,7 @@ class BaseAgent:
             num_llm_calls_available -= 1
 
             # 生成agent prompt
-            prompt = self.__make_agent_prompt(messages=messages+response, **kwargs)
+            prompt = self.make_agent_prompt(messages=messages+response, **kwargs)
             # print(prompt)
 
             # 发起llm请求
