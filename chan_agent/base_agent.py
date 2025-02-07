@@ -130,6 +130,8 @@ class BaseAgent:
         num_llm_calls_available = self.max_llm_call_per_run
         response = []
         while True and num_llm_calls_available > 0:
+            system_error = None
+
             num_llm_calls_available -= 1
 
             # 生成agent prompt
@@ -156,10 +158,8 @@ class BaseAgent:
                 tool_call=None if isinstance(tool_call, SystemError) else tool_call,
             ))
             if isinstance(tool_call, SystemError):
-                response.append(AgentMessage(
-                    role="system",
-                    content=tool_call.error,
-                ))
+                system_error = tool_call
+                
 
             if do_tool_call and isinstance(tool_call, ToolCall):
                 # 执行工具
@@ -175,6 +175,11 @@ class BaseAgent:
                         role=self.agent_type,
                         content=tool_result.response,
                     ))
+            elif system_error:
+                response.append(AgentMessage(
+                    role="system",
+                    content=tool_call.error,
+                ))
             else:
                 break 
                 
@@ -188,11 +193,12 @@ class BaseAgent:
         num_llm_calls_available = self.max_llm_call_per_run
         response = []
         while True and num_llm_calls_available > 0:
+            system_error = None
+            
             num_llm_calls_available -= 1
 
             # 生成agent prompt
             prompt = self.make_agent_prompt(messages=messages+response, **kwargs)
-            # print(prompt)
 
             # 发起llm请求
             llm_out = self.llm.text_completions_with_stream(
@@ -208,17 +214,19 @@ class BaseAgent:
                 # 检测使用的工具
                 tool_call = self.__detect_tool(content)
                 agent_output.content = content.split("🛠️")[0]
-                agent_output.tool_call = tool_call
+                agent_output.tool_call = None if isinstance(tool_call, SystemError) else tool_call
 
                 yield response + [agent_output]
 
-                if tool_call:
+                if tool_call is not None:
                     # 已经识别到工具直接截断
+                    if isinstance(tool_call, SystemError):
+                        system_error = tool_call
                     break
             
             response += [agent_output]
-
-            if do_tool_call and agent_output.tool_call:
+            
+            if do_tool_call and isinstance(agent_output.tool_call, ToolCall):
                 # 执行工具
                 logger.info(agent_output.tool_call)
 
@@ -237,6 +245,12 @@ class BaseAgent:
                     ))
                     yield response
                     break
+            elif system_error:
+                response.append(AgentMessage(
+                    role="system",
+                    content=system_error.error,
+                ))
+                yield response
             else:
                 break 
                         
