@@ -67,9 +67,9 @@ def get_messages_conversation(
     for m in messages[::-1]:
         # 倒序获取
         if isinstance(m, AgentMessage):
-            conversation = f"- {m.role}: {m.content} {m.tool_call if m.tool_call and show_tool_call else ''}\n\n" + conversation
+            conversation = f"[{m.role}]:\n{m.content} {m.tool_call if m.tool_call and show_tool_call else ''}\n\n" + conversation
         else:
-            conversation = f"- {m.role}: {m.content}\n\n" + conversation
+            conversation = f"[{m.role}]:\n{m.content}\n\n" + conversation
         if m.role == 'user':
             num_content_chat_available -= 1
             if num_content_chat_available <= 0:

@@ -37,8 +37,7 @@ PROMPT_RULES_SECTION = dedent("""\
 
 PROMPT_CONVERSATION_START_SECTION = dedent("""\
 # Conversation Start
-{conversation}
-""")
+{conversation}""")
 
 
 
@@ -80,7 +79,7 @@ class BaseAgent:
         conversation = get_messages_conversation(messages, max_content_chat_length=self.max_content_chat_length, show_tool_call=True)
 
         # 加上agent回复的前缀
-        conversation += f"- {self.agent_type}: "
+        conversation += f"[{self.agent_type}]:\n"
 
         prompt = ""
         prompt += PROMPT_ROLE_SECTION.format(role=self.role)
@@ -93,7 +92,7 @@ class BaseAgent:
 
         return prompt
     
-    def __detect_tool(self, content:str) -> Union[ToolCall, None]:
+    def __detect_tool(self, content:str) -> Union[ToolCall, SystemError, None]:
         """
         检测工具
         """
@@ -111,9 +110,15 @@ class BaseAgent:
                         args=json_data['args']
                     )
                 else:
-                    logger.error(f"Tool not found: {json_data['name']}")
+                    available_tools = ", ".join(self.tools_map.keys())
+                    error_msg = f"Tool '{json_data['name']}' not found. Available tools: {available_tools}"
+                    logger.error(error_msg)
+                    return SystemError(error=error_msg)
+                    
             except json.JSONDecodeError as e:
-                logger.error(f"JSON decode error: {e}")
+                error_msg = 'JSON decode error. Tool responses should follow this format: 🛠️ {{"name": $TOOL_NAME, "args": $TOOL_INPUT}} 🔚'
+                logger.error(error_msg)
+                return SystemError(error=error_msg)
 
         return None
 
@@ -129,7 +134,6 @@ class BaseAgent:
 
             # 生成agent prompt
             prompt = self.make_agent_prompt(messages=messages+response, **kwargs)
-            # print(prompt)
 
             # 发起llm请求
             out = self.llm.text_completions(
@@ -149,10 +153,15 @@ class BaseAgent:
             response.append(AgentMessage(
                 role=self.agent_type,
                 content=content,
-                tool_call=tool_call
+                tool_call=None if isinstance(tool_call, SystemError) else tool_call,
             ))
+            if isinstance(tool_call, SystemError):
+                response.append(AgentMessage(
+                    role="system",
+                    content=tool_call.error,
+                ))
 
-            if do_tool_call and tool_call:
+            if do_tool_call and isinstance(tool_call, ToolCall):
                 # 执行工具
                 logger.info(tool_call)
                 tool_result = self.tools_map[tool_call.name].call(params=tool_call.args, **kwargs)

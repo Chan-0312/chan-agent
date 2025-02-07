@@ -23,7 +23,13 @@ class GeminiLLM(BaseLLM):
         )
 
 
-    def text_completions(self, prompt: str, instructions: str = None, temperature: float = None, top_p: float = None) -> str:
+    def text_completions(
+            self, prompt: str, 
+            instructions: str = None, 
+            temperature: float = None, 
+            top_p: float = None,
+            max_tokens: int = None,
+            timeout: int = 30) -> str:
         """
         使用prompt生成文本 completions
         """
@@ -41,6 +47,8 @@ class GeminiLLM(BaseLLM):
             messages: list, 
             temperature: float = None,
             top_p: float = None,
+            max_tokens: int = None,
+            timeout: int = 30
         ) -> str:
         """
         使用 messages 列表生成文本 completions。
@@ -72,6 +80,8 @@ class GeminiLLM(BaseLLM):
             messages: list, 
             temperature: float = None,
             top_p: float = None,
+            max_tokens: int = None,
+            timeout: int = 30
         ) -> Iterator[str]:
         """
         使用 messages 列表生成文本 completions。

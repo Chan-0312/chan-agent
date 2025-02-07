@@ -43,6 +43,8 @@ class AgentMessage(ChatMessage):
     tool_call: Optional[ToolCall] = Field(None, description="tool calls")
     extra: Optional[Any] = Field(None, description="extra info")
 
+class SystemError(BaseModel):
+    error: str = Field(..., description="error message")    
 
 class TaskInputItem(BaseModel):
     key: str = Field(..., description="key")
