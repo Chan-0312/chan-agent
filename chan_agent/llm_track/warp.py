@@ -53,74 +53,74 @@ def wrap_create(create_fn):
 
             def gen():
                 nonlocal outputs_messages, current_message, model, usage
-                for chunk in response:
-                    # 提取模型名称
-                    if model is None:
-                        model = chunk.model
-                    
-                    for choice in chunk.choices:
-                        delta = choice.delta
-
-                        # 更新 role（通常出现在第一块）
-                        if delta.role:
-                            if current_message["role"] is None:
-                                if delta.role == "model":
-                                    delta.role = "assistant"
-                                current_message["role"] = delta.role
-
-                        # 累积内容
-                        if delta.content:
-                            if current_message["content"] is None:
-                                current_message["content"] = delta.content
-                            current_message["content"] += delta.content
-
+                try:
+                    for chunk in response:
+                        # 提取模型名称
+                        if model is None:
+                            model = chunk.model
                         
-                        # 处理工具调用
-                        if delta.function_call:
-                            if current_message['function_call'] is None:
-                                current_message['function_call'] = {
-                                    "name": delta.function_call.name,
-                                    "arguments": delta.function_call.arguments
-                                }
-                            else:
-                                current_message['function_call']['arguments'] += delta.function_call.arguments
+                        for choice in chunk.choices:
+                            delta = choice.delta
 
-                        if delta.tool_calls:
-                            if current_message['tool_calls'] is None:
-                                current_message['tool_calls'] = [{
-                                    'name': '',
-                                    'arguments': ''
-                                }] * len(delta.tool_calls)
+                            # 更新 role（通常出现在第一块）
+                            if delta.role:
+                                if current_message["role"] is None:
+                                    if delta.role == "model":
+                                        delta.role = "assistant"
+                                    current_message["role"] = delta.role
+
+                            # 累积内容
+                            if delta.content:
+                                if current_message["content"] is None:
+                                    current_message["content"] = delta.content
+                                else:
+                                    current_message["content"] += delta.content
+
                             
-                            for tool_call in delta.tool_calls:
-                                if tool_call.function:
-                                    if tool_call.function.name:
-                                        current_message['tool_calls'][tool_call.index]['name'] += tool_call.function.name
-                                    if tool_call.function.arguments:
-                                        current_message['tool_calls'][tool_call.index]['arguments'] += tool_call.function.arguments
+                            # 处理工具调用
+                            if delta.function_call:
+                                if current_message['function_call'] is None:
+                                    current_message['function_call'] = {
+                                        "name": delta.function_call.name,
+                                        "arguments": delta.function_call.arguments
+                                    }
+                                else:
+                                    current_message['function_call']['arguments'] += delta.function_call.arguments
+
+                            if delta.tool_calls:
+                                if current_message['tool_calls'] is None:
+                                    current_message['tool_calls'] = [{'name': '', 'arguments': ''} for _ in range(len(delta.tool_calls))]
+
                                 
-                        # 完成一条消息
-                        if choice.finish_reason in ["stop", "function_call", "tool_calls"]:
-                            outputs_messages.append(current_message)
-                            current_message = {"role": None, "content": "", "function_call": None, "tool_calls": None}
+                                for tool_call in delta.tool_calls:
+                                    if tool_call.function:
+                                        if tool_call.function.name:
+                                            current_message['tool_calls'][tool_call.index]['name'] += tool_call.function.name
+                                        if tool_call.function.arguments:
+                                            current_message['tool_calls'][tool_call.index]['arguments'] += tool_call.function.arguments
+                                    
+                            # 完成一条消息
+                            if choice.finish_reason in ["stop", "function_call", "tool_calls"]:
+                                outputs_messages.append(current_message)
+                                current_message = {"role": None, "content": "", "function_call": None, "tool_calls": None}
 
-                    yield chunk
+                        yield chunk
+                finally:
+                    # 收集最后一条未完成的消息
+                    if current_message["content"]:
+                        outputs_messages.append(current_message)
 
-                # 收集最后一条未完成的消息
-                if current_message["content"]:
-                    outputs_messages.append(current_message)
-
-                elapsed_time = time.perf_counter() - start_time
-                wrap_cached.update({
-                    "outputs_messages": outputs_messages,
-                    "model": model,
-                    "usage": usage,
-                    "timestamp": timestamp,
-                    "elapsed_time": elapsed_time,
-                })
-                
-                if logger_fn is not None:
-                    logger_fn(wrap_cached)
+                    elapsed_time = time.perf_counter() - start_time
+                    wrap_cached.update({
+                        "outputs_messages": outputs_messages,
+                        "model": model,
+                        "usage": usage,
+                        "timestamp": timestamp,
+                        "elapsed_time": elapsed_time,
+                    })
+                    
+                    if logger_fn is not None:
+                        logger_fn(wrap_cached)
                 
             return gen()
 

@@ -69,24 +69,27 @@ class BaseLLM(ABC):
         """
         使用 messages 列表生成文本 completions。
         """
+        try:
+            response = self.client.chat.completions.create(
+                model=self.model_name,
+                messages=messages,
+                stream=True,
+                temperature=temperature,
+                top_p=top_p,
+                max_tokens=max_tokens,
+                timeout = timeout,
+            )
 
-        response = self.client.chat.completions.create(
-            model=self.model_name,
-            messages=messages,
-            stream=True,
-            temperature=temperature,
-            top_p=top_p,
-            max_tokens=max_tokens,
-            timeout = timeout,
-        )
-
-        full_content = ""
-        for chunk in response:
-            if chunk.choices:
-                choices = chunk.choices[0]
-                if choices.delta.content:
-                    full_content += choices.delta.content
-                    yield full_content
+            full_content = ""
+            for chunk in response:
+                if chunk.choices:
+                    choices = chunk.choices[0]
+                    if choices.delta.content:
+                        full_content += choices.delta.content
+                        yield full_content
+        except Exception as e:
+            logger.error(f"text_completions_with_messages_stream | Error: {e}")
+            yield "error"
         
     
     def text_completions(self, prompt: str, instructions: str = None, temperature: float = None, top_p: float = None, max_tokens: int = None, timeout: int = 30) -> str:
