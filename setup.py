@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="chan-agent",  # 包的名称
-    version="0.0.4",    # 版本号
+    version="0.0.5",    # 版本号
     author="Chan",
     author_email="925355568@qq.com",
     description="A simple llm agent",
