@@ -1,6 +1,6 @@
 from abc import ABC
 from pydantic import BaseModel
-from typing import Union, Iterator
+from typing import Union, Iterator, List
 from chan_agent.logger import logger
 
 LLM_REGISTRY = {}
@@ -30,6 +30,32 @@ class BaseLLM(ABC):
         修改模型名称
         """
         self.model_name = model_name
+
+    def image_completions(
+            self, 
+            prompt: str, 
+            images: List[str], 
+            instructions: str = None, 
+            temperature: float = None,
+            top_p: float = None,
+            max_tokens: int = None,
+            timeout: int = 30
+        ) -> str:
+        """
+        图像分析
+        """
+        messages = []
+        if instructions:
+            messages.append({"role": "system", "content": instructions})
+
+        # 初始化用户内容列表，包含文本提示
+        user_content = [{"type": "text", "text": prompt}]
+        # 将图片URLs添加到用户内容列表中
+        user_content.extend(
+            [{"type": "image_url", "image_url": {"url": img_url}} for img_url in images])
+        # 构造消息列表，包括系统指令和用户内容
+        messages.append({"role": "user", "content": user_content})
+        return self.text_completions_with_messages(messages, temperature=temperature, top_p=top_p, max_tokens=max_tokens, timeout=timeout)
 
     def text_completions_with_messages(
             self, 
