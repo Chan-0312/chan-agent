@@ -10,7 +10,7 @@ import google.auth
 import google.auth.transport.requests
 
 
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "TODO"
+# os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "TODO"
 
 
 class OpenAICredentialsRefresher:
