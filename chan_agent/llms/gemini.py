@@ -29,7 +29,7 @@ class GeminiLLM(BaseLLM):
             temperature: float = None, 
             top_p: float = None,
             max_tokens: int = None,
-            timeout: int = 30) -> str:
+            timeout: int = 15) -> str:
         """
         使用prompt生成文本 completions
         """
@@ -48,7 +48,7 @@ class GeminiLLM(BaseLLM):
             temperature: float = None,
             top_p: float = None,
             max_tokens: int = None,
-            timeout: int = 30
+            timeout: int = 15
         ) -> str:
         """
         使用 messages 列表生成文本 completions。
@@ -81,7 +81,7 @@ class GeminiLLM(BaseLLM):
             temperature: float = None,
             top_p: float = None,
             max_tokens: int = None,
-            timeout: int = 30
+            timeout: int = 15
         ) -> Iterator[str]:
         """
         使用 messages 列表生成文本 completions。

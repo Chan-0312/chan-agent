@@ -1,6 +1,7 @@
 from abc import ABC
 from pydantic import BaseModel
 from typing import Union, Iterator, List
+import concurrent.futures
 from chan_agent.logger import logger
 
 LLM_REGISTRY = {}
@@ -39,7 +40,7 @@ class BaseLLM(ABC):
             temperature: float = None,
             top_p: float = None,
             max_tokens: int = None,
-            timeout: int = 30
+            timeout: int = 15
         ) -> str:
         """
         图像分析
@@ -63,7 +64,7 @@ class BaseLLM(ABC):
             temperature: float = None,
             top_p: float = None,
             max_tokens: int = None,
-            timeout: int = 30,
+            timeout: int = 15,
         ) -> str:
         """
         使用 messages 列表生成文本 completions。
@@ -90,7 +91,7 @@ class BaseLLM(ABC):
             temperature: float = None,
             top_p: float = None,
             max_tokens: int = None,
-            timeout: int = 30,
+            timeout: int = 15,
         ) -> Iterator[str]:
         """
         使用 messages 列表生成文本 completions。
@@ -118,7 +119,7 @@ class BaseLLM(ABC):
             yield "error"
         
     
-    def text_completions(self, prompt: str, instructions: str = None, temperature: float = None, top_p: float = None, max_tokens: int = None, timeout: int = 30) -> str:
+    def text_completions(self, prompt: str, instructions: str = None, temperature: float = None, top_p: float = None, max_tokens: int = None, timeout: int = 15) -> str:
         """
         使用prompt生成文本 completions
         """
@@ -129,7 +130,7 @@ class BaseLLM(ABC):
 
         return self.text_completions_with_messages(messages, temperature, top_p, max_tokens, timeout)
     
-    def text_completions_with_stream(self, prompt: str, instructions: str = None, temperature: float = None, top_p: float = None, max_tokens: int = None, timeout: int = 30)-> Iterator[str]:
+    def text_completions_with_stream(self, prompt: str, instructions: str = None, temperature: float = None, top_p: float = None, max_tokens: int = None, timeout: int = 15)-> Iterator[str]:
         """
         使用prompt生成文本 completions 流式返回
         """
@@ -140,7 +141,7 @@ class BaseLLM(ABC):
         return self.text_completions_with_messages_stream(messages, temperature, top_p, max_tokens, timeout)
         
     
-    def basemodel_completions(self, basemodel: type[BaseModel], prompt: str, instructions: str = None, timeout:int=30)  -> Union[BaseModel,None]:
+    def basemodel_completions(self, basemodel: type[BaseModel], prompt: str, instructions: str = None, timeout:int=15)  -> Union[BaseModel,None]:
         """
         使用prompt生成basemodel
         """
@@ -150,21 +151,35 @@ class BaseLLM(ABC):
 
         return self.basemodel_completions_with_messages(basemodel, messages, timeout)
 
-    def basemodel_completions_with_messages(self, basemodel: type[BaseModel], messages: list, timeout:int=30) -> Union[BaseModel,None]:
+    def basemodel_completions_with_messages(self, basemodel: type[BaseModel], messages: list, timeout:int=15) -> Union[BaseModel,None]:
         """
         使用messages列表生成basemodel
         """
+        def _task():
+            try:
+                res = self.instructor_client.chat.completions.create(
+                    model=self.model_name,
+                    response_model=basemodel,
+                    messages=messages,
+                    timeout=timeout  # 内部timeout参数保留，但主要依赖外部超时
+                )
+                return res
+            except Exception as e:
+                logger.error(f'basemodel_completions_with_messages | Internal Error: {e}')
+                return None
+
+        executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+        future = executor.submit(_task)
         try:
-            res = self.instructor_client.chat.completions.create(
-                model=self.model_name,
-                response_model=basemodel,
-                messages=messages,
-                timeout=timeout
-            )
-            return res
-        except Exception as e:
-            logger.error(f'basemodel_completions_with_messages | Error: {e}')
+            return future.result(timeout=timeout)
+        except concurrent.futures.TimeoutError:
+            logger.error(f'basemodel_completions_with_messages | Timeout after {timeout} seconds')
             return None
+        except Exception as e:
+            logger.error(f'basemodel_completions_with_messages | Unexpected error: {e}')
+            return None
+        finally:
+            executor.shutdown(wait=False)  # 立即关闭执行器，不等待任务完成
 
     
 
