@@ -154,6 +154,7 @@ class BaseLLM(ABC):
         """
         使用messages列表生成basemodel
         """
+        # BUG 这里可能回卡死
         try:
             res = self.instructor_client.chat.completions.create(
                 model=self.model_name,
