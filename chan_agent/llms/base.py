@@ -1,7 +1,6 @@
 from abc import ABC
 from pydantic import BaseModel
 from typing import Union, Iterator, List
-import concurrent.futures
 from chan_agent.logger import logger
 
 LLM_REGISTRY = {}
@@ -155,31 +154,21 @@ class BaseLLM(ABC):
         """
         使用messages列表生成basemodel
         """
-        def _task():
-            try:
-                res = self.instructor_client.chat.completions.create(
-                    model=self.model_name,
-                    response_model=basemodel,
-                    messages=messages,
-                    timeout=timeout  # 内部timeout参数保留，但主要依赖外部超时
-                )
-                return res
-            except Exception as e:
-                logger.error(f'basemodel_completions_with_messages | Internal Error: {e}')
-                return None
-
-        executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
-        future = executor.submit(_task)
         try:
-            return future.result(timeout=timeout)
-        except concurrent.futures.TimeoutError:
+            res = self.instructor_client.chat.completions.create(
+                model=self.model_name,
+                response_model=basemodel,
+                messages=messages,
+                max_retries=3,
+                timeout=timeout  # 内部timeout参数保留，但主要依赖外部超时
+            )
+            return res
+        except TimeoutError:
             logger.error(f'basemodel_completions_with_messages | Timeout after {timeout} seconds')
             return None
         except Exception as e:
-            logger.error(f'basemodel_completions_with_messages | Unexpected error: {e}')
+            logger.error(f'basemodel_completions_with_messages | Internal Error: {e}')
             return None
-        finally:
-            executor.shutdown(wait=False)  # 立即关闭执行器，不等待任务完成
 
     
 
