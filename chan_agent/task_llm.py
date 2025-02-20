@@ -47,3 +47,31 @@ class TaskLLM:
         )
 
         return self.llm.basemodel_completions(self.output_model, prompt)
+    
+
+
+class ImageTaskLLM(TaskLLM):
+
+    def call(self, inputs: List[TaskInputItem], images: List[str], **kwargs):
+
+        inputs.append(
+            TaskInputItem(
+                key="images",
+                key_name="images",
+                value="See attached images",
+            ))
+        
+        prompt = PROMPT_TASK_BACKBONE.format(
+            task = self.task,
+            inputs = "\n\n".join([str(ip) for ip in inputs]),
+            outputs = self.output_model.get_scheme(),
+            rules = self.rules
+        )
+        
+        return self.llm.image_basemodel_completions(
+            self.output_model,
+            prompt = prompt,
+            images = images
+        )
+
+        

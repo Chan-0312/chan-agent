@@ -2,6 +2,7 @@ from abc import ABC
 from pydantic import BaseModel
 from typing import Union, Iterator, List
 from chan_agent.logger import logger
+from chan_agent.utils.image import encode_image_from_url
 
 LLM_REGISTRY = {}
 
@@ -44,6 +45,9 @@ class BaseLLM(ABC):
         """
         图像分析
         """
+        if 'gemini' in self.model_name:
+            images = [encode_image_from_url(image_url) for image_url in images]
+
         messages = []
         if instructions:
             messages.append({"role": "system", "content": instructions})
@@ -56,6 +60,28 @@ class BaseLLM(ABC):
         # 构造消息列表，包括系统指令和用户内容
         messages.append({"role": "user", "content": user_content})
         return self.text_completions_with_messages(messages, temperature=temperature, top_p=top_p, max_tokens=max_tokens, timeout=timeout)
+
+    def image_basemodel_completions(self, basemodel: type[BaseModel], prompt: str, images: List[str],  instructions: str = None, timeout:int=15)  -> Union[BaseModel,None]:
+        """
+        使用prompt生成basemodel
+        """
+        if 'gemini' in self.model_name:
+            images = [encode_image_from_url(image_url) for image_url in images]
+
+        messages = []
+        if instructions:
+            messages.append({"role": "system", "content": instructions})
+
+        # 初始化用户内容列表，包含文本提示
+        user_content = [{"type": "text", "text": prompt}]
+        # 将图片URLs添加到用户内容列表中
+        user_content.extend(
+            [{"type": "image_url", "image_url": {"url": img_url}} for img_url in images])
+        # 构造消息列表，包括系统指令和用户内容
+        messages.append({"role": "user", "content": user_content})
+
+        return self.basemodel_completions_with_messages(basemodel, messages, timeout)
+
 
     def text_completions_with_messages(
             self, 
