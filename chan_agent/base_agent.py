@@ -69,7 +69,38 @@ class BaseAgent:
         self.agent_type = agent_type
 
         self.llm = llm
+        self.usage = {
+            "prompt_tokens": 0,
+            "completion_tokens": 0,
+            "total_tokens": 0,
+        }
+
+    def record_usage(self, usage: dict):
+        """
+        缓存usage
+        """
+        if usage:
+            self.usage["total_tokens"] += usage.get("total_tokens", 0)
+            self.usage["prompt_tokens"] += usage.get("prompt_tokens", 0)
+            self.usage["completion_tokens"] += usage.get("completion_tokens", 0)
     
+    def clear_usage(self):
+        """
+        清除usage
+        """
+        self.usage = {
+            "prompt_tokens": 0,
+            "completion_tokens": 0,
+            "total_tokens": 0,
+        }
+
+    def get_usage(self):
+        """
+        获取usage
+        """
+        return self.usage
+
+
     def make_agent_prompt(self, messages:List[AgentMessage], **kwargs) -> str:
         """
         构建agent prompt
@@ -126,7 +157,9 @@ class BaseAgent:
         """
         对话
         """
-        
+        # 清除usage
+        self.clear_usage()
+
         num_llm_calls_available = self.max_llm_call_per_run
         response = []
         while True and num_llm_calls_available > 0:
@@ -138,19 +171,23 @@ class BaseAgent:
             prompt = self.make_agent_prompt(messages=messages+response, **kwargs)
 
             # 发起llm请求
-            out = self.llm.text_completions(
+            out_dict = self.llm.text_completions(
                 prompt=prompt, 
                 instructions=None, 
                 temperature=kwargs.get('temperature', 0.3),
                 top_p=kwargs.get('top_p', None),
                 max_tokens=kwargs.get('max_tokens', None),
+                return_usage=True
             )
 
+            # 记录usage
+            self.record_usage(out_dict.get('usage', {}))
+
             # 检测使用的工具
-            tool_call = self.__detect_tool(out)
+            tool_call = self.__detect_tool(out_dict['content'])
 
             # 去处工具后面的内容
-            content = out.split("🛠️")[0]
+            content = out_dict['content'].split("🛠️")[0]
 
             response.append(AgentMessage(
                 role=self.agent_type,
@@ -190,6 +227,8 @@ class BaseAgent:
         """
         流式对话
         """
+        # 清除usage
+        self.clear_usage()
         num_llm_calls_available = self.max_llm_call_per_run
         response = []
         while True and num_llm_calls_available > 0:
@@ -207,14 +246,16 @@ class BaseAgent:
                 temperature=kwargs.get('temperature', 0.3),
                 top_p=kwargs.get('top_p', None),
                 max_tokens=kwargs.get('max_tokens', None),
+                return_usage=True
             )
 
             agent_output = AgentMessage(role=self.agent_type, content='')
-            for content in llm_out:
+            for out_dict in llm_out:
                 # 检测使用的工具
-                tool_call = self.__detect_tool(content)
-                agent_output.content = content.split("🛠️")[0]
+                tool_call = self.__detect_tool(out_dict['content'])
+                agent_output.content = out_dict['content'].split("🛠️")[0]
                 agent_output.tool_call = None if isinstance(tool_call, SystemError) else tool_call
+                self.record_usage(out_dict.get('usage', {}))
 
                 yield response + [agent_output]
 
@@ -222,7 +263,7 @@ class BaseAgent:
                     # 已经识别到工具直接截断
                     if isinstance(tool_call, SystemError):
                         system_error = tool_call
-                    break
+                    # break
             
             response += [agent_output]
             

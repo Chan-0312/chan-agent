@@ -58,6 +58,12 @@ def wrap_create(create_fn):
                         # 提取模型名称
                         if model is None:
                             model = chunk.model
+
+                        usage = {
+                            'completion_tokens': chunk.usage.completion_tokens,
+                            'prompt_tokens': chunk.usage.prompt_tokens,
+                            'total_tokens': chunk.usage.total_tokens
+                        } if chunk.usage else None
                         
                         for choice in chunk.choices:
                             delta = choice.delta
